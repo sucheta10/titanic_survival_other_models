@@ -1,0 +1,107 @@
+#Importing libraries
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+
+#Connecting drive
+
+from google.colab import drive
+
+# Mount Google Drive at the default mount point
+drive.mount('/content/drive')
+
+# Load the data from csv file to Pandas DataFrame
+titanic_data = pd.read_csv('/content/drive/My Drive/train.csv')
+
+#Data Preprocessing
+
+titanic_data = titanic_data.drop(columns='Cabin', axis=1)
+titanic_data['Age'].fillna(titanic_data['Age'].mean(), inplace=True)
+titanic_data['Embarked'].fillna(titanic_data['Embarked'].mode()[0], inplace=True)
+
+#Converting categorical columns
+
+titanic_data.replace({'Sex': {'male': 0, 'female': 1}, 'Embarked': {'S': 0, 'C': 1, 'Q': 2}}, inplace=True)
+
+#Splitting data into features and targe
+
+X = titanic_data.drop(columns=['PassengerId', 'Name', 'Ticket', 'Survived'], axis=1)
+Y = titanic_data['Survived']
+# Splitting the data into training data and test data
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=2)
+
+#Initialize Models
+
+models = {
+    'Logistic Regression': LogisticRegression(max_iter=200),
+    'Decision Tree': DecisionTreeClassifier(),
+    'Random Forest': RandomForestClassifier(),
+    'SVM': SVC(),
+    'KNN': KNeighborsClassifier(),
+    'Naive Bayes': GaussianNB()
+}
+
+#Store accuracy scores
+
+training_accuracies = []
+test_accuracies = []
+model_names = []
+
+#Train and evaluate each model
+
+for name, model in models.items():
+    model.fit(X_train, Y_train)
+    # Accuracy on training data
+    X_train_prediction = model.predict(X_train)
+    training_data_accuracy = accuracy_score(Y_train, X_train_prediction)
+    training_accuracies.append(training_data_accuracy)
+    # Accuracy on test data
+    X_test_prediction = model.predict(X_test)
+    test_data_accuracy = accuracy_score(Y_test, X_test_prediction)
+    test_accuracies.append(test_data_accuracy)
+    model_names.append(name)
+    print(f'{name} - Training Data Accuracy: {training_data_accuracy:.4f}')
+    print(f'{name} - Test Data Accuracy: {test_data_accuracy:.4f}')
+    print('--------------------------------')
+
+#Plotting the accuracies,Add some text for labels, title and custom x-axis tick labels and Add accuracy labels above the bars
+
+x = np.arange(len(model_names))  # the label locations
+width = 0.35  # the width of the bars
+
+fig, ax = plt.subplots(figsize=(12, 6))
+rects1 = ax.bar(x - width/2, training_accuracies, width, label='Training Accuracy')
+rects2 = ax.bar(x + width/2, test_accuracies, width, label='Test Accuracy')
+ax.set_xlabel('Model')
+ax.set_ylabel('Accuracy Score')
+ax.set_title('Accuracy Scores by Model')
+ax.set_xticks(x)
+ax.set_xticklabels(model_names)
+ax.set_ylim(0, 1)
+ax.legend()
+def autolabel(rects):
+    for rect in rects:
+        height = rect.get_height()
+        ax.annotate(f'{height:.2f}',
+                    xy=(rect.get_x() + rect.get_width() / 2, height),
+                    xytext=(0, 3),  # 3 points vertical offset
+                    textcoords="offset points",
+                    ha='center', va='bottom')
+
+autolabel(rects1)
+autolabel(rects2)
+
+fig.tight_layout()
+
+plt.show()
+
